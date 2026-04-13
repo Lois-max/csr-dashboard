@@ -19,13 +19,17 @@
   }
   body { font-family: var(--font-ui); background: var(--bg); color: var(--text); min-height: 100vh; }
   .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
-  header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
+  header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
   header h1 { font-size: 24px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
   header p { font-size: 13px; color: var(--text-muted); }
+  .sync-status { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-hint); }
+  .sync-dot.live { background: var(--green); }
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 2rem; }
-  .stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; position: relative; }
   .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
   .stat-value { font-size: 24px; font-weight: 600; color: var(--text); }
+  .stat-value.loading { color: var(--text-hint); font-size: 16px; }
   .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1.25rem; }
   .tab { padding: 7px 14px; border-radius: var(--radius); font-size: 13px; cursor: pointer; border: 0.5px solid transparent; color: var(--text-muted); background: transparent; font-family: var(--font-ui); transition: all .15s; }
   .tab:hover { background: var(--surface); }
@@ -35,10 +39,11 @@
   .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
   .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
   .card-title { font-size: 14px; font-weight: 500; }
-  .btn-group { display: flex; align-items: center; gap: 6px; }
+  .btn-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .add-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); background: transparent; cursor: pointer; color: var(--text-muted); font-family: var(--font-ui); }
   .add-btn:hover { background: var(--surface2); }
   .export-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); background: var(--surface2); cursor: pointer; color: var(--text); font-family: var(--font-ui); }
+  .notion-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--blue); background: var(--blue-bg); cursor: pointer; color: var(--blue-text); font-family: var(--font-ui); font-weight: 500; text-decoration: none; display: inline-block; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
   th { text-align: left; font-weight: 500; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
   td { padding: 9px 8px; border-bottom: 0.5px solid var(--border); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
@@ -68,23 +73,31 @@
   .del-btn:hover { opacity: 1; background: #fdf2f2; }
   .saved-notice { font-size: 11px; color: var(--green); margin-right: 6px; opacity: 0; transition: opacity .3s; }
   .saved-notice.show { opacity: 1; }
+  .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--border-strong); border-top-color: var(--blue); border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @media(max-width:600px) { .two-col { grid-template-columns: 1fr; } .page { padding: 1rem; } }
 </style>
 </head>
 <body>
 <div class="page">
   <header>
-    <h1>CSR Department Dashboard</h1>
-    <p id="date-display"></p>
+    <div>
+      <h1>CSR Department Dashboard</h1>
+      <p id="date-display"></p>
+    </div>
+    <div class="sync-status">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-label">Connecting to Notion...</span>
+    </div>
   </header>
 
   <div class="stat-grid">
-    <div class="stat"><div class="stat-label">Active projects</div><div class="stat-value" id="s-projects">0</div></div>
-    <div class="stat"><div class="stat-label">Partnerships</div><div class="stat-value" id="s-partners">0</div></div>
-    <div class="stat"><div class="stat-label">Special programmes</div><div class="stat-value" id="s-programs">0</div></div>
-    <div class="stat"><div class="stat-label">Donors & sponsors</div><div class="stat-value" id="s-donors">0</div></div>
-    <div class="stat"><div class="stat-label">Schools (C4K)</div><div class="stat-value" id="s-schools">0</div></div>
-    <div class="stat"><div class="stat-label">People supported</div><div class="stat-value" id="s-people">0</div></div>
+    <div class="stat"><div class="stat-label">Active projects</div><div class="stat-value loading" id="s-projects"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Partnerships</div><div class="stat-value loading" id="s-partners"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Special programmes</div><div class="stat-value loading" id="s-programs"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Donors & sponsors</div><div class="stat-value loading" id="s-donors"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Schools (C4K)</div><div class="stat-value loading" id="s-schools"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">People supported</div><div class="stat-value loading" id="s-people"><span class="spinner"></span></div></div>
   </div>
 
   <div class="tabs">
@@ -106,12 +119,13 @@
   <div id="tab-projects" class="section active">
     <div class="card">
       <div class="card-header"><span class="card-title">All projects</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-projects">Saved</span>
-        <button class="add-btn" onclick="openModal('project')">+ Add project</button>
-        <button class="export-btn" onclick="exportCSV('projects')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-81c7-8d77-e446c355fa07" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('projects')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Name</th><th style="width:14%">Type</th><th style="width:20%">Partner / Client</th><th style="width:20%">Timeline</th><th style="width:14%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-projects"><tr><td colspan="6" class="empty">No projects yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:30%">Name</th><th style="width:15%">Type</th><th style="width:20%">Partner</th><th style="width:20%">Start date</th><th style="width:15%">Status</th></tr></thead>
+      <tbody id="tbl-projects"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -119,12 +133,13 @@
   <div id="tab-partnerships" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Partnerships</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-partnerships">Saved</span>
-        <button class="add-btn" onclick="openModal('partnership')">+ Add partnership</button>
-        <button class="export-btn" onclick="exportCSV('partnerships')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8172-afa8-dcc934e0bd43" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('partnerships')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Organisation</th><th style="width:22%">Focus area</th><th style="width:18%">Start date</th><th style="width:14%">Status</th><th style="width:14%">Contact</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-partnerships"><tr><td colspan="6" class="empty">No partnerships yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:30%">Organisation</th><th style="width:22%">Focus area</th><th style="width:18%">Start date</th><th style="width:15%">Status</th><th style="width:15%">Contact</th></tr></thead>
+      <tbody id="tbl-partnerships"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -132,12 +147,13 @@
   <div id="tab-trainings" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Trainings</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-trainings">Saved</span>
-        <button class="add-btn" onclick="openModal('training')">+ Add training</button>
-        <button class="export-btn" onclick="exportCSV('trainings')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8104-8b9f-f2747f6d0d20" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('trainings')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Title</th><th style="width:20%">Audience</th><th style="width:16%">Date</th><th style="width:14%">Participants</th><th style="width:14%">Status</th><th style="width:8%"></th></tr></thead>
-      <tbody id="tbl-trainings"><tr><td colspan="6" class="empty">No trainings yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:30%">Title</th><th style="width:20%">Audience</th><th style="width:18%">Date</th><th style="width:14%">Participants</th><th style="width:18%">Status</th></tr></thead>
+      <tbody id="tbl-trainings"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -145,12 +161,13 @@
   <div id="tab-internships" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Internships</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-internships">Saved</span>
-        <button class="add-btn" onclick="openModal('internship')">+ Add internship</button>
-        <button class="export-btn" onclick="exportCSV('internships')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8122-9f53-d90656e0ea26" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('internships')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Programme name</th><th style="width:20%">School / Source</th><th style="width:12%">Interns</th><th style="width:22%">Period</th><th style="width:14%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-internships"><tr><td colspan="6" class="empty">No internships yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:30%">Programme</th><th style="width:22%">School / Source</th><th style="width:14%">Interns</th><th style="width:18%">Start date</th><th style="width:16%">Status</th></tr></thead>
+      <tbody id="tbl-internships"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -158,12 +175,13 @@
   <div id="tab-mentorships" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Mentorships</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-mentorships">Saved</span>
-        <button class="add-btn" onclick="openModal('mentorship')">+ Add mentorship</button>
-        <button class="export-btn" onclick="exportCSV('mentorships')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-81a8-a6f7-c3cb74959335" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('mentorships')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Programme</th><th style="width:20%">Mentor</th><th style="width:20%">Mentee(s)</th><th style="width:16%">Start</th><th style="width:12%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-mentorships"><tr><td colspan="6" class="empty">No mentorships yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:28%">Programme</th><th style="width:20%">Mentor</th><th style="width:20%">Mentee(s)</th><th style="width:16%">Start date</th><th style="width:16%">Status</th></tr></thead>
+      <tbody id="tbl-mentorships"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -171,25 +189,27 @@
   <div id="tab-donors" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Donors & sponsors</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-donors">Saved</span>
-        <button class="add-btn" onclick="openModal('donor')">+ Add entry</button>
-        <button class="export-btn" onclick="exportCSV('donors')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-81bb-a7af-dbe93aa9c3ca" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('donors')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:26%">Name</th><th style="width:14%">Type</th><th style="width:22%">Focus / Programme</th><th style="width:22%">Contribution</th><th style="width:12%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-donors"><tr><td colspan="6" class="empty">No donors or sponsors yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:28%">Name</th><th style="width:14%">Type</th><th style="width:22%">Focus</th><th style="width:20%">Contribution</th><th style="width:16%">Status</th></tr></thead>
+      <tbody id="tbl-donors"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
-  <!-- CODING FOR KIDS -->
+  <!-- SCHOOLS -->
   <div id="tab-schools" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Coding for Kids — enrolled schools</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-schools">Saved</span>
-        <button class="add-btn" onclick="openModal('school')">+ Add school</button>
-        <button class="export-btn" onclick="exportCSV('schools')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8103-8d89-ecb09b7b994f" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('schools')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:30%">School name</th><th style="width:22%">Location</th><th style="width:14%">Students</th><th style="width:20%">Enrolment date</th><th style="width:10%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-schools"><tr><td colspan="6" class="empty">No schools enrolled yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:32%">School name</th><th style="width:22%">Location</th><th style="width:16%">Students</th><th style="width:18%">Enrolment date</th><th style="width:12%">Status</th></tr></thead>
+      <tbody id="tbl-schools"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -197,12 +217,13 @@
   <div id="tab-programs" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Special programmes</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-programs">Saved</span>
-        <button class="add-btn" onclick="openModal('program')">+ Add programme</button>
-        <button class="export-btn" onclick="exportCSV('programs')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8105-990c-e8288cb057d2" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('programs')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Programme</th><th style="width:20%">Type</th><th style="width:14%">Participants</th><th style="width:22%">Period</th><th style="width:12%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-programs"><tr><td colspan="6" class="empty">No programmes yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:30%">Programme</th><th style="width:20%">Type</th><th style="width:16%">Participants</th><th style="width:20%">Period</th><th style="width:14%">Status</th></tr></thead>
+      <tbody id="tbl-programs"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -210,12 +231,13 @@
   <div id="tab-grants" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">Grants</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-grants">Saved</span>
-        <button class="add-btn" onclick="openModal('grant')">+ Add grant</button>
-        <button class="export-btn" onclick="exportCSV('grants')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8144-8da0-f8ab6256f8be" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('grants')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:26%">Grant name</th><th style="width:20%">Funding body</th><th style="width:16%">Amount (GHS)</th><th style="width:16%">Date applied</th><th style="width:18%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-grants"><tr><td colspan="6" class="empty">No grants yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:28%">Grant name</th><th style="width:22%">Funding body</th><th style="width:16%">Amount (GHS)</th><th style="width:16%">Date applied</th><th style="width:18%">Status</th></tr></thead>
+      <tbody id="tbl-grants"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -223,12 +245,13 @@
   <div id="tab-tvet" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">TVET</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-tvet">Saved</span>
-        <button class="add-btn" onclick="openModal('tvet')">+ Add entry</button>
-        <button class="export-btn" onclick="exportCSV('tvet')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-81a9-8ce3-e18cc0ef0c0b" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('tvet')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:24%">Name</th><th style="width:20%">Type</th><th style="width:20%">Institution</th><th style="width:14%">Students</th><th style="width:14%">Status</th><th style="width:8%"></th></tr></thead>
-      <tbody id="tbl-tvet"><tr><td colspan="6" class="empty">No TVET entries yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:26%">Name</th><th style="width:20%">Type</th><th style="width:22%">Institution</th><th style="width:16%">Students</th><th style="width:16%">Status</th></tr></thead>
+      <tbody id="tbl-tvet"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -236,12 +259,13 @@
   <div id="tab-inhouseevents" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">In-house events</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-inhouseevents">Saved</span>
-        <button class="add-btn" onclick="openModal('inhouseevent')">+ Add event</button>
-        <button class="export-btn" onclick="exportCSV('inhouseevents')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-8174-8311-cc98d89419e4" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('inhouseevents')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:28%">Event name</th><th style="width:18%">Date</th><th style="width:20%">Venue</th><th style="width:14%">Attendees</th><th style="width:16%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-inhouseevents"><tr><td colspan="6" class="empty">No in-house events yet.</td></tr></tbody></table>
+      <table><thead><tr><th style="width:30%">Event name</th><th style="width:18%">Date</th><th style="width:20%">Venue</th><th style="width:16%">Attendees</th><th style="width:16%">Status</th></tr></thead>
+      <tbody id="tbl-inhouseevents"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 
@@ -249,46 +273,65 @@
   <div id="tab-externalevents" class="section">
     <div class="card">
       <div class="card-header"><span class="card-title">External events</span>
-        <div class="btn-group"><span class="saved-notice" id="saved-externalevents">Saved</span>
-        <button class="add-btn" onclick="openModal('externalevent')">+ Add event</button>
-        <button class="export-btn" onclick="exportCSV('externalevents')">Export CSV</button></div>
+        <div class="btn-group">
+          <a class="notion-btn" href="https://notion.so/34133882-3e81-81b6-a8c2-d9e43c9a7081" target="_blank">Open in Notion ↗</a>
+          <button class="export-btn" onclick="exportCSV('externalevents')">Export CSV</button>
+        </div>
       </div>
-      <table><thead><tr><th style="width:26%">Event name</th><th style="width:20%">Organising body</th><th style="width:16%">Date</th><th style="width:18%">Representative</th><th style="width:16%">Status</th><th style="width:4%"></th></tr></thead>
-      <tbody id="tbl-externalevents"><tr><td colspan="6" class="empty">No external events yet.</td></tr></tbody></table>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeOnOverlay(event)">
-  <div class="modal" id="modal-box">
-    <h2 id="modal-title">Add entry</h2>
-    <div id="modal-fields"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveEntry()">Save entry</button>
+      <table><thead><tr><th style="width:28%">Event name</th><th style="width:20%">Organising body</th><th style="width:16%">Date</th><th style="width:20%">Representative</th><th style="width:16%">Status</th></tr></thead>
+      <tbody id="tbl-externalevents"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table>
     </div>
   </div>
 </div>
 
 <script>
+const WORKER = "https://csr-notion-proxy.loisyoung28.workers.dev";
+
+const DB_IDS = {
+  projects:      "34133882-3e81-81c7-8d77-e446c355fa07",
+  partnerships:  "34133882-3e81-8172-afa8-dcc934e0bd43",
+  trainings:     "34133882-3e81-8104-8b9f-f2747f6d0d20",
+  internships:   "34133882-3e81-8122-9f53-d90656e0ea26",
+  mentorships:   "34133882-3e81-81a8-a6f7-c3cb74959335",
+  donors:        "34133882-3e81-81bb-a7af-dbe93aa9c3ca",
+  schools:       "34133882-3e81-8103-8d89-ecb09b7b994f",
+  programs:      "34133882-3e81-8105-990c-e8288cb057d2",
+  grants:        "34133882-3e81-8144-8da0-f8ab6256f8be",
+  tvet:          "34133882-3e81-81a9-8ce3-e18cc0ef0c0b",
+  inhouseevents: "34133882-3e81-8174-8311-cc98d89419e4",
+  externalevents:"34133882-3e81-81b6-a8c2-d9e43c9a7081",
+};
+
 const now = new Date();
 document.getElementById('date-display').textContent = now.toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-const KEYS = ['projects','partnerships','trainings','internships','mentorships','donors','schools','programs','grants','tvet','inhouseevents','externalevents'];
-const data = {};
-KEYS.forEach(k => {
-  try { data[k] = JSON.parse(localStorage.getItem('csr_'+k)) || []; }
-  catch(e) { data[k] = []; }
-});
+const notionData = {};
 
-let currentModal = null;
-
-function save(key) {
-  localStorage.setItem('csr_'+key, JSON.stringify(data[key]));
-  const el = document.getElementById('saved-'+key);
-  if(el) { el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2000); }
+function getProp(page, name) {
+  const prop = page.properties?.[name];
+  if (!prop) return "—";
+  switch(prop.type) {
+    case "title": return prop.title?.map(t=>t.plain_text).join("") || "—";
+    case "rich_text": return prop.rich_text?.map(t=>t.plain_text).join("") || "—";
+    case "select": return prop.select?.name || "—";
+    case "number": return prop.number ?? "—";
+    case "date": return prop.date?.start || "—";
+    case "email": return prop.email || "—";
+    default: return "—";
+  }
 }
+
+async function fetchDB(key) {
+  const res = await fetch(`${WORKER}?db=${DB_IDS[key]}`);
+  const data = await res.json();
+  return data.results || [];
+}
+
+const statusBadge = s => {
+  if(!s || s==="—") return "—";
+  const cls = s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z-]/g,'');
+  return `<span class="badge badge-${cls}">${s}</span>`;
+};
 
 function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -297,208 +340,118 @@ function switchTab(name, btn) {
   document.getElementById('tab-'+name).classList.add('active');
 }
 
-const statusBadge = s => {
-  const cls = (s||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z-]/g,'');
-  return `<span class="badge badge-${cls}">${s}</span>`;
-};
-
-const modals = {
-  project:{title:'Add project',key:'projects',fields:[
-    {name:'name',label:'Project name',type:'text',full:true},
-    {name:'type',label:'Type',type:'select',opts:['Internal','External']},
-    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed']},
-    {name:'partner',label:'Partner / Client',type:'text',full:true},
-    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
-    {name:'notes',label:'Notes',type:'textarea',full:true}
-  ]},
-  partnership:{title:'Add partnership',key:'partnerships',fields:[
-    {name:'name',label:'Organisation name',type:'text',full:true},
-    {name:'focus',label:'Focus area',type:'text',full:true},
-    {name:'start',label:'Start date',type:'date'},
-    {name:'status',label:'Status',type:'select',opts:['Active','Ongoing','Completed','Ended']},
-    {name:'contact',label:'Contact person',type:'text',full:true},
-    {name:'notes',label:'Notes',type:'textarea',full:true}
-  ]},
-  training:{title:'Add training',key:'trainings',fields:[
-    {name:'name',label:'Training title',type:'text',full:true},
-    {name:'audience',label:'Target audience',type:'text',full:true},
-    {name:'date',label:'Date',type:'date'},{name:'participants',label:'No. of participants',type:'number'},
-    {name:'status',label:'Status',type:'select',opts:['Upcoming','Active','Completed']},
-    {name:'notes',label:'Notes',type:'textarea',full:true}
-  ]},
-  internship:{title:'Add internship',key:'internships',fields:[
-    {name:'name',label:'Programme name',type:'text',full:true},
-    {name:'source',label:'School / Source',type:'text',full:true},
-    {name:'interns',label:'Number of interns',type:'number'},
-    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
-    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed'],full:true}
-  ]},
-  mentorship:{title:'Add mentorship',key:'mentorships',fields:[
-    {name:'name',label:'Programme name',type:'text',full:true},
-    {name:'mentor',label:'Mentor name',type:'text'},{name:'mentee',label:'Mentee(s)',type:'text'},
-    {name:'start',label:'Start date',type:'date'},
-    {name:'status',label:'Status',type:'select',opts:['Active','Ongoing','Completed']}
-  ]},
-  donor:{title:'Add donor / sponsor',key:'donors',fields:[
-    {name:'name',label:'Name',type:'text',full:true},
-    {name:'type',label:'Type',type:'select',opts:['Donor','Sponsor','In-kind']},
-    {name:'status',label:'Status',type:'select',opts:['Active','Ongoing','Past']},
-    {name:'focus',label:'Focus / Programme',type:'text',full:true},
-    {name:'contribution',label:'Contribution (GHS or describe)',type:'text',full:true}
-  ]},
-  school:{title:'Add school (Coding for Kids)',key:'schools',fields:[
-    {name:'name',label:'School name',type:'text',full:true},
-    {name:'location',label:'Location',type:'text',full:true},
-    {name:'students',label:'No. of students',type:'number'},{name:'date',label:'Enrolment date',type:'date'},
-    {name:'status',label:'Status',type:'select',opts:['Enrolled','Active','Completed']}
-  ]},
-  program:{title:'Add special programme',key:'programs',fields:[
-    {name:'name',label:'Programme name',type:'text',full:true},
-    {name:'type',label:'Type',type:'select',opts:['Women in Tech','PWD Programme','Youth','Other'],full:true},
-    {name:'participants',label:'No. of participants',type:'number'},
-    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
-    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed'],full:true}
-  ]},
-  grant:{title:'Add grant',key:'grants',fields:[
-    {name:'name',label:'Grant name',type:'text',full:true},
-    {name:'body',label:'Funding body',type:'text',full:true},
-    {name:'amount',label:'Amount (GHS)',type:'number'},
-    {name:'status',label:'Status',type:'select',opts:['Applied','Awarded','Rejected','Pending']},
-    {name:'applied',label:'Date applied',type:'date'},{name:'decision',label:'Decision date',type:'date'},
-    {name:'focus',label:'Focus area',type:'text',full:true},
-    {name:'notes',label:'Notes',type:'textarea',full:true}
-  ]},
-  tvet:{title:'Add TVET entry',key:'tvet',fields:[
-    {name:'name',label:'Name',type:'text',full:true},
-    {name:'type',label:'Type',type:'select',opts:['Student Enrolment','Partner Institution','Programme / Course'],full:true},
-    {name:'institution',label:'Institution',type:'text',full:true},
-    {name:'students',label:'No. of students',type:'number'},
-    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
-    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed'],full:true}
-  ]},
-  inhouseevent:{title:'Add in-house event',key:'inhouseevents',fields:[
-    {name:'name',label:'Event name',type:'text',full:true},
-    {name:'date',label:'Date',type:'date'},{name:'venue',label:'Venue',type:'text'},
-    {name:'attendees',label:'No. of attendees',type:'number'},
-    {name:'organiser',label:'Organiser',type:'text',full:true},
-    {name:'status',label:'Status',type:'select',opts:['Upcoming','Ongoing','Completed'],full:true},
-    {name:'notes',label:'Notes',type:'textarea',full:true}
-  ]},
-  externalevent:{title:'Add external event',key:'externalevents',fields:[
-    {name:'name',label:'Event name',type:'text',full:true},
-    {name:'body',label:'Organising body',type:'text',full:true},
-    {name:'date',label:'Date',type:'date'},{name:'venue',label:'Venue',type:'text'},
-    {name:'rep',label:'Our representative',type:'text',full:true},
-    {name:'attendees',label:'No. of attendees',type:'number'},
-    {name:'status',label:'Status',type:'select',opts:['Upcoming','Ongoing','Completed'],full:true}
-  ]}
-};
-
-function openModal(type) {
-  currentModal = type;
-  const cfg = modals[type];
-  document.getElementById('modal-title').textContent = cfg.title;
-  let html = ''; let i = 0; const fields = cfg.fields;
-  while(i < fields.length) {
-    const f = fields[i];
-    if(f.full || f.type==='textarea') {
-      html += `<div class="field"><label>${f.label}</label>`;
-      if(f.type==='select') html += `<select id="mf-${f.name}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      else if(f.type==='textarea') html += `<textarea id="mf-${f.name}" rows="3"></textarea>`;
-      else html += `<input type="${f.type}" id="mf-${f.name}">`;
-      html += `</div>`; i++;
-    } else if(i+1 < fields.length && !fields[i+1].full && fields[i+1].type!=='textarea') {
-      const f2 = fields[i+1];
-      html += `<div class="two-col"><div class="field"><label>${f.label}</label>`;
-      if(f.type==='select') html += `<select id="mf-${f.name}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      else html += `<input type="${f.type}" id="mf-${f.name}">`;
-      html += `</div><div class="field"><label>${f2.label}</label>`;
-      if(f2.type==='select') html += `<select id="mf-${f2.name}">${f2.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      else html += `<input type="${f2.type}" id="mf-${f2.name}">`;
-      html += `</div></div>`; i+=2;
-    } else {
-      html += `<div class="field"><label>${f.label}</label>`;
-      if(f.type==='select') html += `<select id="mf-${f.name}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      else html += `<input type="${f.type}" id="mf-${f.name}">`;
-      html += `</div>`; i++;
-    }
-  }
-  document.getElementById('modal-fields').innerHTML = html;
-  document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(()=>{ const first = document.querySelector('#modal-fields input, #modal-fields select'); if(first) first.focus(); },100);
-}
-
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); currentModal = null; }
-function closeOnOverlay(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
-
-function saveEntry() {
-  if(!currentModal) return;
-  const cfg = modals[currentModal];
-  const entry = {id: Date.now()};
-  cfg.fields.forEach(f=>{ entry[f.name] = document.getElementById('mf-'+f.name)?.value || '—'; });
-  data[cfg.key].push(entry);
-  save(cfg.key);
-  renderAll();
-  closeModal();
-}
-
-function deleteEntry(key, id) {
-  if(!confirm('Delete this entry?')) return;
-  data[key] = data[key].filter(r=>r.id!==id);
-  save(key);
-  renderAll();
-}
-
-function renderTable(key, cols, emptyMsg) {
+function renderTable(key, rows, cols, emptyMsg) {
   const tb = document.getElementById('tbl-'+key);
-  if(!data[key].length){ tb.innerHTML=`<tr><td colspan="${cols.length+1}" class="empty">${emptyMsg}</td></tr>`; return; }
-  tb.innerHTML = data[key].map(r=>`<tr>${cols.map(c=>{
-    if(c==='status') return `<td>${statusBadge(r[c])}</td>`;
-    return `<td title="${r[c]||''}">${r[c]||'—'}</td>`;
-  }).join('')}<td><button class="del-btn" onclick="deleteEntry('${key}',${r.id})">✕</button></td></tr>`).join('');
-}
-
-function renderAll() {
-  renderTable('projects',['name','type','partner','start','status'],'No projects yet.');
-  renderTable('partnerships',['name','focus','start','status','contact'],'No partnerships yet.');
-  renderTable('trainings',['name','audience','date','participants','status'],'No trainings yet.');
-  renderTable('internships',['name','source','interns','start','status'],'No internships yet.');
-  renderTable('mentorships',['name','mentor','mentee','start','status'],'No mentorships yet.');
-  renderTable('donors',['name','type','focus','contribution','status'],'No donors or sponsors yet.');
-  renderTable('schools',['name','location','students','date','status'],'No schools enrolled yet.');
-  renderTable('programs',['name','type','participants','start','status'],'No programmes yet.');
-  renderTable('grants',['name','body','amount','applied','status'],'No grants yet.');
-  renderTable('tvet',['name','type','institution','students','status'],'No TVET entries yet.');
-  renderTable('inhouseevents',['name','date','venue','attendees','status'],'No in-house events yet.');
-  renderTable('externalevents',['name','body','date','rep','status'],'No external events yet.');
-  updateStats();
-}
-
-function updateStats() {
-  const active = arr => arr.filter(r=>['Active','Ongoing','Enrolled'].includes(r.status)).length;
-  document.getElementById('s-projects').textContent = active(data.projects);
-  document.getElementById('s-partners').textContent = data.partnerships.length;
-  document.getElementById('s-programs').textContent = data.programs.length;
-  document.getElementById('s-donors').textContent = data.donors.length;
-  document.getElementById('s-schools').textContent = data.schools.length;
-  const people = [...data.trainings,...data.internships,...data.programs,...data.tvet,...data.inhouseevents,...data.externalevents]
-    .reduce((a,r)=>a+parseInt(r.participants||r.interns||r.students||r.attendees||0),0);
-  document.getElementById('s-people').textContent = people;
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="${cols.length}" class="empty">${emptyMsg}</td></tr>`; return; }
+  tb.innerHTML = rows.map(r=>`<tr>${cols.map(c=>{
+    const val = getProp(r, c.prop);
+    if(c.type==='status') return `<td>${statusBadge(val)}</td>`;
+    return `<td title="${val}">${val}</td>`;
+  }).join('')}</tr>`).join('');
 }
 
 function exportCSV(key) {
-  if(!data[key].length){ alert('No data to export yet.'); return; }
-  const headers = Object.keys(data[key][0]).filter(k=>k!=='id');
-  const rows = data[key].map(r=>headers.map(h=>`"${(r[h]||'').replace(/"/g,'""')}"`).join(','));
-  const csv = [headers.join(','),...rows].join('\n');
+  const rows = notionData[key] || [];
+  if(!rows.length){ alert('No data to export yet.'); return; }
+  const props = Object.keys(rows[0].properties||{});
+  const headers = props;
+  const csvRows = rows.map(r=>props.map(p=>`"${getProp(r,p)}"`).join(','));
+  const csv = [headers.join(','),...csvRows].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download = `csr_${key}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
-renderAll();
+async function loadAll() {
+  try {
+    const keys = Object.keys(DB_IDS);
+    const results = await Promise.all(keys.map(k => fetchDB(k)));
+    keys.forEach((k,i) => { notionData[k] = results[i]; });
+
+    // Render tables
+    renderTable('projects', notionData.projects, [
+      {prop:'Name'},{prop:'Type'},{prop:'Partner / Client'},{prop:'Start Date'},{prop:'Status',type:'status'}
+    ], 'No projects yet — add them in Notion.');
+
+    renderTable('partnerships', notionData.partnerships, [
+      {prop:'Name'},{prop:'Focus Area'},{prop:'Start Date'},{prop:'Status',type:'status'},{prop:'Contact Person'}
+    ], 'No partnerships yet.');
+
+    renderTable('trainings', notionData.trainings, [
+      {prop:'Name'},{prop:'Target Audience'},{prop:'Date'},{prop:'Number of Participants'},{prop:'Status',type:'status'}
+    ], 'No trainings yet.');
+
+    renderTable('internships', notionData.internships, [
+      {prop:'Name'},{prop:'School / Source'},{prop:'Number of Interns'},{prop:'Start Date'},{prop:'Status',type:'status'}
+    ], 'No internships yet.');
+
+    renderTable('mentorships', notionData.mentorships, [
+      {prop:'Programme Name'},{prop:'Mentor'},{prop:'Mentee(s)'},{prop:'Start Date'},{prop:'Status',type:'status'}
+    ], 'No mentorships yet.');
+
+    renderTable('donors', notionData.donors, [
+      {prop:'Name'},{prop:'Type'},{prop:'Focus / Programme'},{prop:'Contribution'},{prop:'Status',type:'status'}
+    ], 'No donors or sponsors yet.');
+
+    renderTable('schools', notionData.schools, [
+      {prop:'School Name'},{prop:'Location'},{prop:'Number of Students'},{prop:'Enrolment Date'},{prop:'Status',type:'status'}
+    ], 'No schools enrolled yet.');
+
+    renderTable('programs', notionData.programs, [
+      {prop:'Programme Name'},{prop:'Type'},{prop:'Number of Participants'},{prop:'Start Date'},{prop:'Status',type:'status'}
+    ], 'No programmes yet.');
+
+    renderTable('grants', notionData.grants, [
+      {prop:'Grant Name'},{prop:'Funding Body'},{prop:'Amount (GHS)'},{prop:'Date Applied'},{prop:'Status',type:'status'}
+    ], 'No grants yet.');
+
+    renderTable('tvet', notionData.tvet, [
+      {prop:'Name'},{prop:'Type'},{prop:'Institution'},{prop:'Number of Students'},{prop:'Status',type:'status'}
+    ], 'No TVET entries yet.');
+
+    renderTable('inhouseevents', notionData.inhouseevents, [
+      {prop:'Event Name'},{prop:'Date'},{prop:'Location / Venue'},{prop:'Number of Attendees'},{prop:'Status',type:'status'}
+    ], 'No in-house events yet.');
+
+    renderTable('externalevents', notionData.externalevents, [
+      {prop:'Event Name'},{prop:'Organising Body'},{prop:'Date'},{prop:'Our Representative'},{prop:'Status',type:'status'}
+    ], 'No external events yet.');
+
+    // Update stat cards
+    const active = arr => arr.filter(r=>['Active','Ongoing','Enrolled'].includes(getProp(r,'Status'))).length;
+    document.getElementById('s-projects').textContent = active(notionData.projects);
+    document.getElementById('s-partners').textContent = notionData.partnerships.length;
+    document.getElementById('s-programs').textContent = notionData.programs.length;
+    document.getElementById('s-donors').textContent = notionData.donors.length;
+    document.getElementById('s-schools').textContent = notionData.schools.length;
+
+    const people = [
+      ...notionData.trainings.map(r=>parseInt(getProp(r,'Number of Participants'))||0),
+      ...notionData.internships.map(r=>parseInt(getProp(r,'Number of Interns'))||0),
+      ...notionData.programs.map(r=>parseInt(getProp(r,'Number of Participants'))||0),
+      ...notionData.tvet.map(r=>parseInt(getProp(r,'Number of Students'))||0),
+      ...notionData.inhouseevents.map(r=>parseInt(getProp(r,'Number of Attendees'))||0),
+      ...notionData.externalevents.map(r=>parseInt(getProp(r,'Number of Attendees'))||0),
+    ].reduce((a,b)=>a+b,0);
+    document.getElementById('s-people').textContent = people;
+
+    // Update sync status
+    document.getElementById('sync-dot').classList.add('live');
+    document.getElementById('sync-label').textContent = `Live from Notion · Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+
+    // Remove loading class from stat values
+    document.querySelectorAll('.stat-value').forEach(el=>el.classList.remove('loading'));
+
+  } catch(err) {
+    document.getElementById('sync-label').textContent = 'Could not connect to Notion';
+    console.error(err);
+  }
+}
+
+loadAll();
+// Auto-refresh every 5 minutes
+setInterval(loadAll, 5 * 60 * 1000);
 </script>
 </body>
 </html>
