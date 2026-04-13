@@ -97,6 +97,7 @@
     <div class="stat"><div class="stat-label">Special programmes</div><div class="stat-value loading" id="s-programs"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Donors & sponsors</div><div class="stat-value loading" id="s-donors"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Schools (C4K)</div><div class="stat-value loading" id="s-schools"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Mentorships</div><div class="stat-value loading" id="s-mentorships"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">People supported</div><div class="stat-value loading" id="s-people"><span class="spinner"></span></div></div>
   </div>
 
@@ -425,6 +426,7 @@ async function loadAll() {
     document.getElementById('s-programs').textContent = notionData.programs.length;
     document.getElementById('s-donors').textContent = notionData.donors.length;
     document.getElementById('s-schools').textContent = notionData.schools.length;
+    document.getElementById('s-mentorships').textContent = notionData.mentorships.length;
 
     const people = [
       ...notionData.trainings.map(r=>parseInt(getProp(r,'Number of Participants'))||0),
@@ -433,6 +435,7 @@ async function loadAll() {
       ...notionData.tvet.map(r=>parseInt(getProp(r,'Number of Students'))||0),
       ...notionData.inhouseevents.map(r=>parseInt(getProp(r,'Number of Attendees'))||0),
       ...notionData.externalevents.map(r=>parseInt(getProp(r,'Number of Attendees'))||0),
+      ...notionData.mentorships.map(r=>parseInt(getProp(r,'Number of Mentees'))||0),
     ].reduce((a,b)=>a+b,0);
     document.getElementById('s-people').textContent = people;
 
