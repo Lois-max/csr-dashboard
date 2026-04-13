@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSR Department Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.2);
+    --text: #1a1a18; --text-muted: #6b6b67; --text-hint: #9b9b96;
+    --green: #0F6E56; --green-bg: #E1F5EE; --green-text: #085041;
+    --blue: #185FA5; --blue-bg: #E6F1FB; --blue-text: #0C447C;
+    --amber: #854F0B; --amber-bg: #FAEEDA; --amber-text: #633806;
+    --gray-bg: #F1EFE8; --gray-text: #5F5E5A;
+    --radius: 8px; --radius-lg: 12px;
+    --font-ui: system-ui, -apple-system, sans-serif;
+  }
+  body { font-family: var(--font-ui); background: var(--bg); color: var(--text); min-height: 100vh; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
+  header h1 { font-size: 24px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  header p { font-size: 13px; color: var(--text-muted); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 2rem; }
+  .stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .stat-value { font-size: 24px; font-weight: 600; color: var(--text); }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .tab { padding: 7px 14px; border-radius: var(--radius); font-size: 13px; cursor: pointer; border: 0.5px solid transparent; color: var(--text-muted); background: transparent; font-family: var(--font-ui); transition: all .15s; }
+  .tab:hover { background: var(--surface); }
+  .tab.active { background: var(--surface); border-color: var(--border-strong); color: var(--text); font-weight: 500; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .card-title { font-size: 14px; font-weight: 500; }
+  .btn-group { display: flex; align-items: center; gap: 6px; }
+  .add-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); background: transparent; cursor: pointer; color: var(--text-muted); font-family: var(--font-ui); }
+  .add-btn:hover { background: var(--surface2); }
+  .export-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border-strong); background: var(--surface2); cursor: pointer; color: var(--text); font-family: var(--font-ui); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th { text-align: left; font-weight: 500; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
+  td { padding: 9px 8px; border-bottom: 0.5px solid var(--border); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 500; }
+  .badge-active, .badge-enrolled, .badge-awarded { background: var(--green-bg); color: var(--green-text); }
+  .badge-completed, .badge-past, .badge-ended { background: var(--gray-bg); color: var(--gray-text); }
+  .badge-upcoming, .badge-applied { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-ongoing, .badge-pending, .badge-rejected { background: var(--amber-bg); color: var(--amber-text); }
+  .empty { color: var(--text-hint); font-size: 13px; padding: 1.5rem 0; text-align: center; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 1.75rem; width: min(500px, 92vw); max-height: 85vh; overflow-y: auto; }
+  .modal h2 { font-size: 16px; font-weight: 500; margin-bottom: 1.25rem; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 13px; background: var(--surface); color: var(--text); font-family: var(--font-ui); outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; border-top: 0.5px solid var(--border); padding-top: 1.25rem; }
+  .btn-cancel { padding: 8px 18px; font-size: 13px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: transparent; cursor: pointer; color: var(--text-muted); font-family: var(--font-ui); }
+  .btn-save { padding: 8px 18px; font-size: 13px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--text); color: #fff; cursor: pointer; font-family: var(--font-ui); font-weight: 500; }
+  .btn-save:hover { opacity: 0.85; }
+  .del-btn { font-size: 11px; color: #c0392b; cursor: pointer; padding: 2px 6px; border-radius: 4px; background: transparent; border: none; opacity: 0.6; }
+  .del-btn:hover { opacity: 1; background: #fdf2f2; }
+  .saved-notice { font-size: 11px; color: var(--green); margin-right: 6px; opacity: 0; transition: opacity .3s; }
+  .saved-notice.show { opacity: 1; }
+  @media(max-width:600px) { .two-col { grid-template-columns: 1fr; } .page { padding: 1rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>CSR Department Dashboard</h1>
+    <p id="date-display"></p>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-label">Active projects</div><div class="stat-value" id="s-projects">0</div></div>
+    <div class="stat"><div class="stat-label">Partnerships</div><div class="stat-value" id="s-partners">0</div></div>
+    <div class="stat"><div class="stat-label">Special programmes</div><div class="stat-value" id="s-programs">0</div></div>
+    <div class="stat"><div class="stat-label">Donors & sponsors</div><div class="stat-value" id="s-donors">0</div></div>
+    <div class="stat"><div class="stat-label">Schools (C4K)</div><div class="stat-value" id="s-schools">0</div></div>
+    <div class="stat"><div class="stat-label">People supported</div><div class="stat-value" id="s-people">0</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('projects',this)">Projects</button>
+    <button class="tab" onclick="switchTab('partnerships',this)">Partnerships</button>
+    <button class="tab" onclick="switchTab('trainings',this)">Trainings</button>
+    <button class="tab" onclick="switchTab('internships',this)">Internships</button>
+    <button class="tab" onclick="switchTab('mentorships',this)">Mentorships</button>
+    <button class="tab" onclick="switchTab('donors',this)">Donors & sponsors</button>
+    <button class="tab" onclick="switchTab('schools',this)">Coding for Kids</button>
+    <button class="tab" onclick="switchTab('programs',this)">Special programmes</button>
+    <button class="tab" onclick="switchTab('grants',this)">Grants</button>
+    <button class="tab" onclick="switchTab('tvet',this)">TVET</button>
+    <button class="tab" onclick="switchTab('inhouseevents',this)">In-house events</button>
+    <button class="tab" onclick="switchTab('externalevents',this)">External events</button>
+  </div>
+
+  <!-- PROJECTS -->
+  <div id="tab-projects" class="section active">
+    <div class="card">
+      <div class="card-header"><span class="card-title">All projects</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-projects">Saved</span>
+        <button class="add-btn" onclick="openModal('project')">+ Add project</button>
+        <button class="export-btn" onclick="exportCSV('projects')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Name</th><th style="width:14%">Type</th><th style="width:20%">Partner / Client</th><th style="width:20%">Timeline</th><th style="width:14%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-projects"><tr><td colspan="6" class="empty">No projects yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- PARTNERSHIPS -->
+  <div id="tab-partnerships" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Partnerships</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-partnerships">Saved</span>
+        <button class="add-btn" onclick="openModal('partnership')">+ Add partnership</button>
+        <button class="export-btn" onclick="exportCSV('partnerships')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Organisation</th><th style="width:22%">Focus area</th><th style="width:18%">Start date</th><th style="width:14%">Status</th><th style="width:14%">Contact</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-partnerships"><tr><td colspan="6" class="empty">No partnerships yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- TRAININGS -->
+  <div id="tab-trainings" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Trainings</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-trainings">Saved</span>
+        <button class="add-btn" onclick="openModal('training')">+ Add training</button>
+        <button class="export-btn" onclick="exportCSV('trainings')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Title</th><th style="width:20%">Audience</th><th style="width:16%">Date</th><th style="width:14%">Participants</th><th style="width:14%">Status</th><th style="width:8%"></th></tr></thead>
+      <tbody id="tbl-trainings"><tr><td colspan="6" class="empty">No trainings yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- INTERNSHIPS -->
+  <div id="tab-internships" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Internships</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-internships">Saved</span>
+        <button class="add-btn" onclick="openModal('internship')">+ Add internship</button>
+        <button class="export-btn" onclick="exportCSV('internships')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Programme name</th><th style="width:20%">School / Source</th><th style="width:12%">Interns</th><th style="width:22%">Period</th><th style="width:14%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-internships"><tr><td colspan="6" class="empty">No internships yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- MENTORSHIPS -->
+  <div id="tab-mentorships" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Mentorships</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-mentorships">Saved</span>
+        <button class="add-btn" onclick="openModal('mentorship')">+ Add mentorship</button>
+        <button class="export-btn" onclick="exportCSV('mentorships')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Programme</th><th style="width:20%">Mentor</th><th style="width:20%">Mentee(s)</th><th style="width:16%">Start</th><th style="width:12%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-mentorships"><tr><td colspan="6" class="empty">No mentorships yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- DONORS -->
+  <div id="tab-donors" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Donors & sponsors</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-donors">Saved</span>
+        <button class="add-btn" onclick="openModal('donor')">+ Add entry</button>
+        <button class="export-btn" onclick="exportCSV('donors')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:26%">Name</th><th style="width:14%">Type</th><th style="width:22%">Focus / Programme</th><th style="width:22%">Contribution</th><th style="width:12%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-donors"><tr><td colspan="6" class="empty">No donors or sponsors yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- CODING FOR KIDS -->
+  <div id="tab-schools" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Coding for Kids — enrolled schools</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-schools">Saved</span>
+        <button class="add-btn" onclick="openModal('school')">+ Add school</button>
+        <button class="export-btn" onclick="exportCSV('schools')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:30%">School name</th><th style="width:22%">Location</th><th style="width:14%">Students</th><th style="width:20%">Enrolment date</th><th style="width:10%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-schools"><tr><td colspan="6" class="empty">No schools enrolled yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- SPECIAL PROGRAMMES -->
+  <div id="tab-programs" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Special programmes</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-programs">Saved</span>
+        <button class="add-btn" onclick="openModal('program')">+ Add programme</button>
+        <button class="export-btn" onclick="exportCSV('programs')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Programme</th><th style="width:20%">Type</th><th style="width:14%">Participants</th><th style="width:22%">Period</th><th style="width:12%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-programs"><tr><td colspan="6" class="empty">No programmes yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- GRANTS -->
+  <div id="tab-grants" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Grants</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-grants">Saved</span>
+        <button class="add-btn" onclick="openModal('grant')">+ Add grant</button>
+        <button class="export-btn" onclick="exportCSV('grants')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:26%">Grant name</th><th style="width:20%">Funding body</th><th style="width:16%">Amount (GHS)</th><th style="width:16%">Date applied</th><th style="width:18%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-grants"><tr><td colspan="6" class="empty">No grants yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- TVET -->
+  <div id="tab-tvet" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">TVET</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-tvet">Saved</span>
+        <button class="add-btn" onclick="openModal('tvet')">+ Add entry</button>
+        <button class="export-btn" onclick="exportCSV('tvet')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:24%">Name</th><th style="width:20%">Type</th><th style="width:20%">Institution</th><th style="width:14%">Students</th><th style="width:14%">Status</th><th style="width:8%"></th></tr></thead>
+      <tbody id="tbl-tvet"><tr><td colspan="6" class="empty">No TVET entries yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- IN-HOUSE EVENTS -->
+  <div id="tab-inhouseevents" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">In-house events</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-inhouseevents">Saved</span>
+        <button class="add-btn" onclick="openModal('inhouseevent')">+ Add event</button>
+        <button class="export-btn" onclick="exportCSV('inhouseevents')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:28%">Event name</th><th style="width:18%">Date</th><th style="width:20%">Venue</th><th style="width:14%">Attendees</th><th style="width:16%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-inhouseevents"><tr><td colspan="6" class="empty">No in-house events yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- EXTERNAL EVENTS -->
+  <div id="tab-externalevents" class="section">
+    <div class="card">
+      <div class="card-header"><span class="card-title">External events</span>
+        <div class="btn-group"><span class="saved-notice" id="saved-externalevents">Saved</span>
+        <button class="add-btn" onclick="openModal('externalevent')">+ Add event</button>
+        <button class="export-btn" onclick="exportCSV('externalevents')">Export CSV</button></div>
+      </div>
+      <table><thead><tr><th style="width:26%">Event name</th><th style="width:20%">Organising body</th><th style="width:16%">Date</th><th style="width:18%">Representative</th><th style="width:16%">Status</th><th style="width:4%"></th></tr></thead>
+      <tbody id="tbl-externalevents"><tr><td colspan="6" class="empty">No external events yet.</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeOnOverlay(event)">
+  <div class="modal" id="modal-box">
+    <h2 id="modal-title">Add entry</h2>
+    <div id="modal-fields"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const now = new Date();
+document.getElementById('date-display').textContent = now.toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+const KEYS = ['projects','partnerships','trainings','internships','mentorships','donors','schools','programs','grants','tvet','inhouseevents','externalevents'];
+const data = {};
+KEYS.forEach(k => {
+  try { data[k] = JSON.parse(localStorage.getItem('csr_'+k)) || []; }
+  catch(e) { data[k] = []; }
+});
+
+let currentModal = null;
+
+function save(key) {
+  localStorage.setItem('csr_'+key, JSON.stringify(data[key]));
+  const el = document.getElementById('saved-'+key);
+  if(el) { el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2000); }
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+const statusBadge = s => {
+  const cls = (s||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z-]/g,'');
+  return `<span class="badge badge-${cls}">${s}</span>`;
+};
+
+const modals = {
+  project:{title:'Add project',key:'projects',fields:[
+    {name:'name',label:'Project name',type:'text',full:true},
+    {name:'type',label:'Type',type:'select',opts:['Internal','External']},
+    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed']},
+    {name:'partner',label:'Partner / Client',type:'text',full:true},
+    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
+    {name:'notes',label:'Notes',type:'textarea',full:true}
+  ]},
+  partnership:{title:'Add partnership',key:'partnerships',fields:[
+    {name:'name',label:'Organisation name',type:'text',full:true},
+    {name:'focus',label:'Focus area',type:'text',full:true},
+    {name:'start',label:'Start date',type:'date'},
+    {name:'status',label:'Status',type:'select',opts:['Active','Ongoing','Completed','Ended']},
+    {name:'contact',label:'Contact person',type:'text',full:true},
+    {name:'notes',label:'Notes',type:'textarea',full:true}
+  ]},
+  training:{title:'Add training',key:'trainings',fields:[
+    {name:'name',label:'Training title',type:'text',full:true},
+    {name:'audience',label:'Target audience',type:'text',full:true},
+    {name:'date',label:'Date',type:'date'},{name:'participants',label:'No. of participants',type:'number'},
+    {name:'status',label:'Status',type:'select',opts:['Upcoming','Active','Completed']},
+    {name:'notes',label:'Notes',type:'textarea',full:true}
+  ]},
+  internship:{title:'Add internship',key:'internships',fields:[
+    {name:'name',label:'Programme name',type:'text',full:true},
+    {name:'source',label:'School / Source',type:'text',full:true},
+    {name:'interns',label:'Number of interns',type:'number'},
+    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
+    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed'],full:true}
+  ]},
+  mentorship:{title:'Add mentorship',key:'mentorships',fields:[
+    {name:'name',label:'Programme name',type:'text',full:true},
+    {name:'mentor',label:'Mentor name',type:'text'},{name:'mentee',label:'Mentee(s)',type:'text'},
+    {name:'start',label:'Start date',type:'date'},
+    {name:'status',label:'Status',type:'select',opts:['Active','Ongoing','Completed']}
+  ]},
+  donor:{title:'Add donor / sponsor',key:'donors',fields:[
+    {name:'name',label:'Name',type:'text',full:true},
+    {name:'type',label:'Type',type:'select',opts:['Donor','Sponsor','In-kind']},
+    {name:'status',label:'Status',type:'select',opts:['Active','Ongoing','Past']},
+    {name:'focus',label:'Focus / Programme',type:'text',full:true},
+    {name:'contribution',label:'Contribution (GHS or describe)',type:'text',full:true}
+  ]},
+  school:{title:'Add school (Coding for Kids)',key:'schools',fields:[
+    {name:'name',label:'School name',type:'text',full:true},
+    {name:'location',label:'Location',type:'text',full:true},
+    {name:'students',label:'No. of students',type:'number'},{name:'date',label:'Enrolment date',type:'date'},
+    {name:'status',label:'Status',type:'select',opts:['Enrolled','Active','Completed']}
+  ]},
+  program:{title:'Add special programme',key:'programs',fields:[
+    {name:'name',label:'Programme name',type:'text',full:true},
+    {name:'type',label:'Type',type:'select',opts:['Women in Tech','PWD Programme','Youth','Other'],full:true},
+    {name:'participants',label:'No. of participants',type:'number'},
+    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
+    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed'],full:true}
+  ]},
+  grant:{title:'Add grant',key:'grants',fields:[
+    {name:'name',label:'Grant name',type:'text',full:true},
+    {name:'body',label:'Funding body',type:'text',full:true},
+    {name:'amount',label:'Amount (GHS)',type:'number'},
+    {name:'status',label:'Status',type:'select',opts:['Applied','Awarded','Rejected','Pending']},
+    {name:'applied',label:'Date applied',type:'date'},{name:'decision',label:'Decision date',type:'date'},
+    {name:'focus',label:'Focus area',type:'text',full:true},
+    {name:'notes',label:'Notes',type:'textarea',full:true}
+  ]},
+  tvet:{title:'Add TVET entry',key:'tvet',fields:[
+    {name:'name',label:'Name',type:'text',full:true},
+    {name:'type',label:'Type',type:'select',opts:['Student Enrolment','Partner Institution','Programme / Course'],full:true},
+    {name:'institution',label:'Institution',type:'text',full:true},
+    {name:'students',label:'No. of students',type:'number'},
+    {name:'start',label:'Start date',type:'date'},{name:'end',label:'End date',type:'date'},
+    {name:'status',label:'Status',type:'select',opts:['Active','Upcoming','Completed'],full:true}
+  ]},
+  inhouseevent:{title:'Add in-house event',key:'inhouseevents',fields:[
+    {name:'name',label:'Event name',type:'text',full:true},
+    {name:'date',label:'Date',type:'date'},{name:'venue',label:'Venue',type:'text'},
+    {name:'attendees',label:'No. of attendees',type:'number'},
+    {name:'organiser',label:'Organiser',type:'text',full:true},
+    {name:'status',label:'Status',type:'select',opts:['Upcoming','Ongoing','Completed'],full:true},
+    {name:'notes',label:'Notes',type:'textarea',full:true}
+  ]},
+  externalevent:{title:'Add external event',key:'externalevents',fields:[
+    {name:'name',label:'Event name',type:'text',full:true},
+    {name:'body',label:'Organising body',type:'text',full:true},
+    {name:'date',label:'Date',type:'date'},{name:'venue',label:'Venue',type:'text'},
+    {name:'rep',label:'Our representative',type:'text',full:true},
+    {name:'attendees',label:'No. of attendees',type:'number'},
+    {name:'status',label:'Status',type:'select',opts:['Upcoming','Ongoing','Completed'],full:true}
+  ]}
+};
+
+function openModal(type) {
+  currentModal = type;
+  const cfg = modals[type];
+  document.getElementById('modal-title').textContent = cfg.title;
+  let html = ''; let i = 0; const fields = cfg.fields;
+  while(i < fields.length) {
+    const f = fields[i];
+    if(f.full || f.type==='textarea') {
+      html += `<div class="field"><label>${f.label}</label>`;
+      if(f.type==='select') html += `<select id="mf-${f.name}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+      else if(f.type==='textarea') html += `<textarea id="mf-${f.name}" rows="3"></textarea>`;
+      else html += `<input type="${f.type}" id="mf-${f.name}">`;
+      html += `</div>`; i++;
+    } else if(i+1 < fields.length && !fields[i+1].full && fields[i+1].type!=='textarea') {
+      const f2 = fields[i+1];
+      html += `<div class="two-col"><div class="field"><label>${f.label}</label>`;
+      if(f.type==='select') html += `<select id="mf-${f.name}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+      else html += `<input type="${f.type}" id="mf-${f.name}">`;
+      html += `</div><div class="field"><label>${f2.label}</label>`;
+      if(f2.type==='select') html += `<select id="mf-${f2.name}">${f2.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+      else html += `<input type="${f2.type}" id="mf-${f2.name}">`;
+      html += `</div></div>`; i+=2;
+    } else {
+      html += `<div class="field"><label>${f.label}</label>`;
+      if(f.type==='select') html += `<select id="mf-${f.name}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+      else html += `<input type="${f.type}" id="mf-${f.name}">`;
+      html += `</div>`; i++;
+    }
+  }
+  document.getElementById('modal-fields').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>{ const first = document.querySelector('#modal-fields input, #modal-fields select'); if(first) first.focus(); },100);
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); currentModal = null; }
+function closeOnOverlay(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+function saveEntry() {
+  if(!currentModal) return;
+  const cfg = modals[currentModal];
+  const entry = {id: Date.now()};
+  cfg.fields.forEach(f=>{ entry[f.name] = document.getElementById('mf-'+f.name)?.value || '—'; });
+  data[cfg.key].push(entry);
+  save(cfg.key);
+  renderAll();
+  closeModal();
+}
+
+function deleteEntry(key, id) {
+  if(!confirm('Delete this entry?')) return;
+  data[key] = data[key].filter(r=>r.id!==id);
+  save(key);
+  renderAll();
+}
+
+function renderTable(key, cols, emptyMsg) {
+  const tb = document.getElementById('tbl-'+key);
+  if(!data[key].length){ tb.innerHTML=`<tr><td colspan="${cols.length+1}" class="empty">${emptyMsg}</td></tr>`; return; }
+  tb.innerHTML = data[key].map(r=>`<tr>${cols.map(c=>{
+    if(c==='status') return `<td>${statusBadge(r[c])}</td>`;
+    return `<td title="${r[c]||''}">${r[c]||'—'}</td>`;
+  }).join('')}<td><button class="del-btn" onclick="deleteEntry('${key}',${r.id})">✕</button></td></tr>`).join('');
+}
+
+function renderAll() {
+  renderTable('projects',['name','type','partner','start','status'],'No projects yet.');
+  renderTable('partnerships',['name','focus','start','status','contact'],'No partnerships yet.');
+  renderTable('trainings',['name','audience','date','participants','status'],'No trainings yet.');
+  renderTable('internships',['name','source','interns','start','status'],'No internships yet.');
+  renderTable('mentorships',['name','mentor','mentee','start','status'],'No mentorships yet.');
+  renderTable('donors',['name','type','focus','contribution','status'],'No donors or sponsors yet.');
+  renderTable('schools',['name','location','students','date','status'],'No schools enrolled yet.');
+  renderTable('programs',['name','type','participants','start','status'],'No programmes yet.');
+  renderTable('grants',['name','body','amount','applied','status'],'No grants yet.');
+  renderTable('tvet',['name','type','institution','students','status'],'No TVET entries yet.');
+  renderTable('inhouseevents',['name','date','venue','attendees','status'],'No in-house events yet.');
+  renderTable('externalevents',['name','body','date','rep','status'],'No external events yet.');
+  updateStats();
+}
+
+function updateStats() {
+  const active = arr => arr.filter(r=>['Active','Ongoing','Enrolled'].includes(r.status)).length;
+  document.getElementById('s-projects').textContent = active(data.projects);
+  document.getElementById('s-partners').textContent = data.partnerships.length;
+  document.getElementById('s-programs').textContent = data.programs.length;
+  document.getElementById('s-donors').textContent = data.donors.length;
+  document.getElementById('s-schools').textContent = data.schools.length;
+  const people = [...data.trainings,...data.internships,...data.programs,...data.tvet,...data.inhouseevents,...data.externalevents]
+    .reduce((a,r)=>a+parseInt(r.participants||r.interns||r.students||r.attendees||0),0);
+  document.getElementById('s-people').textContent = people;
+}
+
+function exportCSV(key) {
+  if(!data[key].length){ alert('No data to export yet.'); return; }
+  const headers = Object.keys(data[key][0]).filter(k=>k!=='id');
+  const rows = data[key].map(r=>headers.map(h=>`"${(r[h]||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','),...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = `csr_${key}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+renderAll();
+</script>
+</body>
+</html>
