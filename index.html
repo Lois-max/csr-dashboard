@@ -94,10 +94,13 @@
   <div class="stat-grid">
     <div class="stat"><div class="stat-label">Active projects</div><div class="stat-value loading" id="s-projects"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Partnerships</div><div class="stat-value loading" id="s-partners"><span class="spinner"></span></div></div>
-    <div class="stat"><div class="stat-label">Special programmes</div><div class="stat-value loading" id="s-programs"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Women in Tech</div><div class="stat-value loading" id="s-wit"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Donors & sponsors</div><div class="stat-value loading" id="s-donors"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Schools (C4K)</div><div class="stat-value loading" id="s-schools"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Mentorships</div><div class="stat-value loading" id="s-mentorships"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Internships</div><div class="stat-value loading" id="s-internships"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Total events</div><div class="stat-value loading" id="s-events"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Grants</div><div class="stat-value loading" id="s-grants"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">People supported</div><div class="stat-value loading" id="s-people"><span class="spinner"></span></div></div>
   </div>
 
@@ -423,10 +426,15 @@ async function loadAll() {
     const active = arr => arr.filter(r=>['Active','Ongoing','Enrolled'].includes(getProp(r,'Status'))).length;
     document.getElementById('s-projects').textContent = active(notionData.projects);
     document.getElementById('s-partners').textContent = notionData.partnerships.length;
-    document.getElementById('s-programs').textContent = notionData.programs.length;
     document.getElementById('s-donors').textContent = notionData.donors.length;
     document.getElementById('s-schools').textContent = notionData.schools.length;
     document.getElementById('s-mentorships').textContent = notionData.mentorships.length;
+    document.getElementById('s-internships').textContent = notionData.internships.length;
+    document.getElementById('s-events').textContent = notionData.inhouseevents.length + notionData.externalevents.length;
+    document.getElementById('s-grants').textContent = notionData.grants.length;
+
+    const witCount = notionData.programs.filter(r => getProp(r,'Type') === 'Women in Tech').length;
+    document.getElementById('s-wit').textContent = witCount;
 
     const people = [
       ...notionData.trainings.map(r=>parseInt(getProp(r,'Number of Participants'))||0),
