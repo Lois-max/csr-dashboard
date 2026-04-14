@@ -101,6 +101,9 @@
     <div class="stat"><div class="stat-label">Internships</div><div class="stat-value loading" id="s-internships"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Total events</div><div class="stat-value loading" id="s-events"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">Grants</div><div class="stat-value loading" id="s-grants"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">PWDs impacted</div><div class="stat-value loading" id="s-pwd"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">C4K communities</div><div class="stat-value loading" id="s-c4kcom"><span class="spinner"></span></div></div>
+    <div class="stat"><div class="stat-label">Coding competitions</div><div class="stat-value loading" id="s-competitions"><span class="spinner"></span></div></div>
     <div class="stat"><div class="stat-label">People supported</div><div class="stat-value loading" id="s-people"><span class="spinner"></span></div></div>
   </div>
 
@@ -117,6 +120,8 @@
     <button class="tab" onclick="switchTab('tvet',this)">TVET</button>
     <button class="tab" onclick="switchTab('inhouseevents',this)">In-house events</button>
     <button class="tab" onclick="switchTab('externalevents',this)">External events</button>
+    <button class="tab" onclick="switchTab('c4kcommunities',this)">C4K Communities</button>
+    <button class="tab" onclick="switchTab('competitions',this)">Coding competitions</button>
   </div>
 
   <!-- PROJECTS -->
@@ -304,6 +309,8 @@ const DB_IDS = {
   tvet:          "34133882-3e81-81a9-8ce3-e18cc0ef0c0b",
   inhouseevents: "34133882-3e81-8174-8311-cc98d89419e4",
   externalevents:"34133882-3e81-81b6-a8c2-d9e43c9a7081",
+  c4kcommunities:"34233882-3e81-8176-be5a-cc8230ab64b4",
+  competitions:  "34233882-3e81-812f-b86d-c3ff57d2b218",
 };
 
 const now = new Date();
@@ -418,6 +425,14 @@ async function loadAll() {
       {prop:'Event Name'},{prop:'Date'},{prop:'Location / Venue'},{prop:'Number of Attendees'},{prop:'Status',type:'status'}
     ], 'No in-house events yet.');
 
+    renderTable('c4kcommunities', notionData.c4kcommunities, [
+      {prop:'Name'},{prop:'Community / Location'},{prop:'Number of Participants'},{prop:'Date'},{prop:'Status',type:'status'}
+    ], 'No community sessions yet.');
+
+    renderTable('competitions', notionData.competitions, [
+      {prop:'Competition Name'},{prop:'Location / Venue'},{prop:'Number of Participants'},{prop:'Date'},{prop:'Status',type:'status'}
+    ], 'No competitions yet.');
+
     renderTable('externalevents', notionData.externalevents, [
       {prop:'Event Name'},{prop:'Organising Body'},{prop:'Date'},{prop:'Our Representative'},{prop:'Status',type:'status'}
     ], 'No external events yet.');
@@ -434,6 +449,12 @@ async function loadAll() {
     document.getElementById('s-grants').textContent = notionData.grants.length;
 
     const witCount = notionData.programs.filter(r => getProp(r,'Type') === 'Women in Tech').length;
+    const pwdCount = notionData.programs
+      .filter(r => getProp(r,'Type') === 'PWD Programme')
+      .reduce((a,r) => a + (parseInt(getProp(r,'Number of Participants'))||0), 0);
+    document.getElementById('s-pwd').textContent = pwdCount;
+    document.getElementById('s-c4kcom').textContent = notionData.c4kcommunities.length;
+    document.getElementById('s-competitions').textContent = notionData.competitions.length;
     document.getElementById('s-wit').textContent = witCount;
 
     const people = [
@@ -444,6 +465,8 @@ async function loadAll() {
       ...notionData.inhouseevents.map(r=>parseInt(getProp(r,'Number of Attendees'))||0),
       ...notionData.externalevents.map(r=>parseInt(getProp(r,'Number of Attendees'))||0),
       ...notionData.mentorships.map(r=>parseInt(getProp(r,'Number of Mentees'))||0),
+      ...notionData.c4kcommunities.map(r=>parseInt(getProp(r,'Number of Participants'))||0),
+      ...notionData.competitions.map(r=>parseInt(getProp(r,'Number of Participants'))||0),
     ].reduce((a,b)=>a+b,0);
     document.getElementById('s-people').textContent = people;
 
